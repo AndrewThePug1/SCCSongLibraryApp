@@ -4,7 +4,7 @@ import HomePage from './containers/HomePage'
 import SongsPage from './containers/SongsPage'
 import SongViewer from './containers/SongViewer'
 import './App.css'
-
+import AddSongPage from './containers/AddSongPage'
 const App = () => {
   return (
     <Router>
@@ -20,8 +20,10 @@ const App = () => {
         {/* Route configuration */}
         <Switch>
           <Route path="/" exact component={HomePage} />
+          <Route path = "/add-song" component={AddSongPage} />
           <Route path="/songs" component={SongsPage} /> {/* Corrected this line */}
           <Route path="/song/:songName" component={SongViewer} /> {/* Ensure this is the path you use */}
+
         </Switch>
       </div>
     </Router>
