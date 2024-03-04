@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import CryptoJS from 'crypto-js';
 
 const AddSongPage = () => {
   const [songData, setSongData] = useState({
@@ -20,48 +21,60 @@ const AddSongPage = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    const nameParts = name.split('.');
-    if (nameParts.length === 1) {
-      setSongData({ ...songData, [name]: value });
-    } else {
-      let temp = { ...songData };
-      let ref = temp;
-      for (let i = 0; i < nameParts.length - 1; i++) {
-        ref = ref[nameParts[i]];
+    let data = { ...songData };
+    const keys = name.split('.');
+    keys.reduce((acc, key, index) => {
+      if (index === keys.length - 1) {
+        acc[key] = value;
+        return value;
       }
-      ref[nameParts[nameParts.length - 1]] = value;
-      setSongData(temp);
-    }
+      if (!acc[key]) acc[key] = {};
+      return acc[key];
+    }, data);
+    setSongData(data);
+  };
+
+  const generateHash = () => {
+    const combinedData = JSON.stringify({ ...songData.metadata, lyrics: songData.lyrics });
+    return CryptoJS.SHA256(combinedData).toString(CryptoJS.enc.Hex);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Validation for required fields
     if (!songData.metadata.title || !songData.metadata.artist || !songData.metadata.singers || !songData.metadata.labels) {
       alert('Please fill in all required fields: Title, Artist, Singers, and Labels.');
-      return; // Stop the form submission if validation fails
+      return;
     }
-    // Convert singers and labels to arrays
+  
+    const hash = generateHash();
     const submitData = {
       ...songData,
-      metadata: {
-        ...songData.metadata,
-        singers: songData.metadata.singers.split(',').map(singer => singer.trim()),
-        labels: songData.metadata.labels.split(',').map(label => label.trim()),
-      },
+      hash: hash
     };
 
+    // Original API call to Azure
     try {
-      const apiUrl = 'https://sccsongsblobupload.azurewebsites.net/api/func-UploadJSON?code=kvFM9NHu5LO2v9LkX3BzbBKOxR_mANyjUIlp-2BmCaX2AzFu5TvhzQ==';
-      const response = await axios.post(apiUrl, submitData);
-      console.log(response.data);
-      alert('Song added successfully!');
-      // Reset form or redirect as needed
+      const originalApiUrl = 'https://sccsongsblobupload.azurewebsites.net/api/func-UploadJSON?code=kvFM9NHu5LO2v9LkX3BzbBKOxR_mANyjUIlp-2BmCaX2AzFu5TvhzQ==';
+      await axios.post(originalApiUrl, submitData);
+      console.log('Song added to Azure successfully!');
+      alert('Song added successfully to Azure!');
     } catch (error) {
-      console.error('Error uploading song:', error);
-      alert('Error adding song. Please try again.');
+      console.error('Error uploading song to Azure:', error);
+      alert('Error adding song to Azure. Please try again.');
+    }
+
+    // Additional API call to your Flask backend
+    try {
+      const backendApiUrl = 'http://localhost:5000/add_song';
+      await axios.post(backendApiUrl, submitData);
+      console.log('Song added to backend successfully!');
+      alert('Song added successfully to backend!');
+    } catch (error) {
+      console.error('Error uploading song to backend:', error);
+      alert('Error adding song to backend. Please try again.');
     }
   };
+
 
   return (
     <div>

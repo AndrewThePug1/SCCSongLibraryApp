@@ -10,8 +10,7 @@ const SongsPage = () => {
   const [error, setError] = useState(null);
 
   const sasToken = process.env.REACT_APP_SAS_TOKEN;
-  console.log(sasToken)
-
+  
   const containerName = "songs-scc";
   const storageAccountName = "sccsongsfortworth";
 
